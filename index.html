@@ -6,7 +6,7 @@
   <title>Aesthetic Timestamp</title>
   <link rel="preconnect" href="https://googleapis.com">
   <link rel="preconnect" href="https://gstatic.com" crossorigin>
-  <link href="https://googleapis.com/css2?family=Allura&family=Montserrat:wght@300&display=swap" rel="stylesheet">
+  <link href="https://googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: -apple-system, sans-serif; background: #121212; color: #fff; text-align: center; padding: 20px; margin: 0; }
     .controls { display: flex; flex-direction: column; gap: 10px; max-width: 340px; margin: 16px auto; }
@@ -50,24 +50,70 @@
       canvas.height = loadedImg.height;
       ctx.drawImage(loadedImg, 0, 0);
 
-      const daySize = Math.round(loadedImg.height * 0.068);
-      const timeSize = Math.round(loadedImg.height * 0.032);
-      const marginX = Math.round(loadedImg.width * 0.07);
-      const marginY = Math.round(loadedImg.height * 0.06);
+      const scaleBase = Math.min(loadedImg.width, loadedImg.height);
+      const daySize = Math.round(scaleBase * 0.115);
+      const timeSize = Math.round(scaleBase * 0.056);
+      const rightEdge = loadedImg.width - Math.round(loadedImg.width * 0.08);
+      const bottomY = loadedImg.height - Math.round(loadedImg.height * 0.11);
 
-      ctx.textAlign = 'right';
+      ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = Math.round(scaleBase * 0.015);
       ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 2;
+      ctx.shadowOffsetY = 3;
 
-      ctx.font = `${daySize}px "Allura", cursive`;
+      // 1. Draw Day of Week (e.g., Saturday)
+      ctx.font = `700 ${daySize}px "Caveat", cursive`;
+      ctx.textAlign = 'right';
+      const dayWidth = ctx.measureText(dayText).width;
+      const dayY = bottomY - timeSize * 1.15;
+
+      ctx.save();
+      ctx.translate(rightEdge, dayY);
+      ctx.rotate(-0.03);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
-      ctx.fillText(dayText, loadedImg.width - marginX, loadedImg.height - marginY - timeSize * 1.45);
+      ctx.fillText(dayText, 0, 0);
+      ctx.restore();
 
-      ctx.font = `300 ${timeSize}px "Montserrat", sans-serif`;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.fillText(timeText, loadedImg.width - marginX, loadedImg.height - marginY);
+      // 2. Draw Golden-Orange Brush Swoosh
+      const swooshStartX = rightEdge - dayWidth * 1.08;
+      const swooshEndX = rightEdge + dayWidth * 0.08;
+      const swooshY = dayY + Math.round(daySize * 0.14);
+
+      const grad = ctx.createLinearGradient(swooshStartX, swooshY, swooshEndX, swooshY);
+      grad.addColorStop(0, 'rgba(247, 178, 44, 0.25)');
+      grad.addColorStop(0.25, 'rgba(247, 178, 44, 0.92)');
+      grad.addColorStop(0.85, 'rgba(235, 130, 25, 0.95)');
+      grad.addColorStop(1, 'rgba(235, 130, 25, 0.2)');
+
+      ctx.beginPath();
+      ctx.moveTo(swooshStartX, swooshY);
+      ctx.quadraticCurveTo(
+        (swooshStartX + swooshEndX) / 2,
+        swooshY - daySize * 0.05,
+        swooshEndX,
+        swooshY + daySize * 0.06
+      );
+      ctx.quadraticCurveTo(
+        (swooshStartX + swooshEndX) / 2,
+        swooshY + daySize * 0.04,
+        swooshStartX,
+        swooshY + daySize * 0.03
+      );
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // 3. Draw Handwritten Time (e.g., 02:30 pm)
+      ctx.font = `600 ${timeSize}px "Caveat", cursive`;
+      ctx.save();
+      ctx.translate(rightEdge + Math.round(dayWidth * 0.02), bottomY);
+      ctx.rotate(-0.02);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.94)';
+      ctx.fillText(timeText, 0, 0);
+      ctx.restore();
+
+      ctx.restore();
     }
 
     upload.addEventListener('change', (e) => {
@@ -98,4 +144,3 @@
   </script>
 </body>
 </html>
-
