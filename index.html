@@ -13,7 +13,8 @@
     input, button { padding: 12px; font-size: 16px; border-radius: 10px; border: none; width: 100%; box-sizing: border-box; }
     input[type="datetime-local"] { background: #242424; color: #fff; }
     button { background: #fff; color: #121212; font-weight: bold; cursor: pointer; }
-    canvas { max-width: 100%; height: auto; margin-top: 16px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    #preview { max-width: 100%; height: auto; margin-top: 16px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none; }
+    #hint { font-size: 13px; color: #aaa; margin-top: 8px; display: none; }
   </style>
 </head>
 <body>
@@ -23,13 +24,17 @@
     <input type="datetime-local" id="datePicker" style="display:none;" />
     <button id="download" style="display:none;">Save Stamped Photo</button>
   </div>
-  <canvas id="canvas"></canvas>
+  <p id="hint">Tip: Press &amp; hold the photo below to Save to Photos</p>
+  <img id="preview" alt="Stamped Photo" />
+  <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
     const upload = document.getElementById('upload');
     const datePicker = document.getElementById('datePicker');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const preview = document.getElementById('preview');
+    const hint = document.getElementById('hint');
     const downloadBtn = document.getElementById('download');
     let loadedImg = null;
 
@@ -62,7 +67,7 @@
       ctx.shadowOffsetX = 2;
       ctx.shadowOffsetY = 3;
 
-      // 1. Draw Day of Week (e.g., Saturday)
+      // 1. Draw Day of Week
       ctx.font = `700 ${daySize}px "Caveat", cursive`;
       ctx.textAlign = 'right';
       const dayWidth = ctx.measureText(dayText).width;
@@ -104,7 +109,7 @@
       ctx.fillStyle = grad;
       ctx.fill();
 
-      // 3. Draw Handwritten Time (e.g., 02:30 pm)
+      // 3. Draw Handwritten Time
       ctx.font = `600 ${timeSize}px "Caveat", cursive`;
       ctx.save();
       ctx.translate(rightEdge + Math.round(dayWidth * 0.02), bottomY);
@@ -114,6 +119,11 @@
       ctx.restore();
 
       ctx.restore();
+
+      // Output to real <img> so iPhone long-press Save to Photos works
+      preview.src = canvas.toDataURL('image/jpeg', 0.95);
+      preview.style.display = 'inline-block';
+      hint.style.display = 'block';
     }
 
     upload.addEventListener('change', (e) => {
@@ -136,10 +146,19 @@
     datePicker.addEventListener('change', renderStamp);
 
     downloadBtn.addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.download = 'stamped-photo.jpg';
-      link.href = canvas.toDataURL('image/jpeg', 0.95);
-      link.click();
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'stamped-photo.jpg', { type: 'image/jpeg' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file] });
+            return;
+          } catch (err) {}
+        }
+        const link = document.createElement('a');
+        link.download = 'stamped-photo.jpg';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      }, 'image/jpeg', 0.95);
     });
   </script>
 </body>
